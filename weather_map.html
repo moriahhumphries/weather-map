@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Weather Map</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css" integrity="sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh" crossorigin="anonymous">
+    <script src='https://api.mapbox.com/mapbox-gl-js/v1.9.0/mapbox-gl.js'></script>
+    <link href='https://api.mapbox.com/mapbox-gl-js/v1.9.0/mapbox-gl.css' rel='stylesheet' />
+    <link rel="stylesheet" href="weather-style.css">
+</head>
+<body>
+
+
+<!--Top Bar-->
+
+<div class="navbar navbar-light bg-primary text-white mb-2 p-2"><span id="page-title">Weather App</span><span id="city" class="city"></span></div>
+
+<!--Input Form, search for city-->
+
+<div id="input-form"><form>
+    <div class="form-group form-inline ml-3">
+        <label id="search">Place</label>
+        <input type="text" class="form-control ml-3" id="cityName" placeholder="Enter city">
+        <button class="btn btn-primary ml-3" type="submit" id="citySearch">Search</button>
+    </div>
+</form>
+</div>
+
+<!--Cards with 5 day weather-->
+
+<div id="weather-1" class="card-deck p-1">
+</div>
+
+
+<!--Weather Map-->
+<div id='map' style='width: 100%; height: 300px;'></div>
+
+<script src="jquery.js"></script>
+
+<script src="keys.js"></script>
+
+
+<script>
+
+    "use strict";
+
+    mapboxgl.accessToken = 'pk.eyJ1IjoibW9yaWFoaHVtcGhyaWVzIiwiYSI6ImNrOGo2c283ZDA0azgzbHBxZGVtMWdzNjcifQ.Hoq9gRxqSSGKBQ_zK17yog';
+    var map = new mapboxgl.Map({
+        container: 'map',
+        style: 'mapbox://styles/mapbox/streets-v9',
+        center: [-96.796989, 32.776665],
+        zoom: 11,
+
+    });
+
+    var marker = new mapboxgl.Marker({
+        draggable: true
+    })
+        .setLngLat([-96.796989, 32.776665])
+        .addTo(map);
+
+    var lngLat = {
+        lat: 32.776665,
+        lng:-96.8067
+    };
+    function onDragEnd() {
+
+        lngLat = marker.getLngLat();
+
+        displayWeather();
+    }
+    marker.on('dragend', onDragEnd);
+
+
+    function displayWeather(cityName){
+        var weatherOptions = {
+            "APPID": weatherKey,
+            "q":`${cityName?cityName:'Dallas'}`,
+            "lat": `${lngLat.lat}`,
+            "lon":`${lngLat.lng}`,
+            "units": "imperial"
+        }
+        if(!cityName){
+            delete weatherOptions.q
+        }
+
+        $.get("http://api.openweathermap.org/data/2.5/forecast", weatherOptions)
+            .done(function (data) {
+                console.log(data)
+                var coords = {
+                    lon:data.city.coord.lon,
+                    lat:data.city.coord.lat
+                }
+                var HTML = "";
+                var imgUrl = "http://openweathermap.org/img/w/";
+                $("#weather-1").empty();
+                data.city.name;
+
+                data.list.forEach(function (ele,ind) {
+
+                    if(ind % 8 === 0) {
+                        HTML = "<div class=\"card d-flex justify-content-around\" style=\"width: 100%;\">"
+                            + "<div class= \"card-header bg-primary text-white\">" +
+                            "<h6 class=\"text-center\">" + ele.dt_txt.split(" ")[0]
+                            + "</h6>" + "</div>" + "<ul class=\"list-group  list-group-flush\">" +
+
+                            // Temperature and Icons
+
+                            "<li class=\"list-group-item text-center\">"
+                            + "High/Low Temp:" + " "
+                            + Math.round(ele.main.temp_min)
+                            + "&deg F"  + " " + "/"+ " " +  Math.round(ele.main.temp_max)                   + "&deg F" + " "
+                            + "<img src=\"http://openweathermap.org/img/wn/"+ele.weather[0].icon+"@2x.png\" alt='map'>" + "</li>"
+
+
+
+                            +
+                            "<li class=\"list-group-item text-center\">" + "Description:" + " " + ele.weather[0].description + "</li>" +
+                            "<li class=\"list-group-item text-center\">" + "Humidity:" + " " + ele.main.humidity + "</li>" +
+                            "<li class=\"list-group-item text-center\">" + "Wind:" + " " + ele.wind.speed + "</li>" +
+                            "<li class=\"list-group-item text-center\">" + "Pressure:" + " " + ele.main.pressure + "</li>" + "</ul>" +
+                            "</div>";
+                        $("#weather-1").append(HTML);
+                    }
+                });
+
+                if(cityName){
+                    marker = new mapboxgl.Marker({
+                        draggable: true
+                    })
+                        .setLngLat([coords.lon,coords.lat])
+                        .addTo(map);
+                    marker.on('dragend', onDragEnd);
+                    map.flyTo({
+                        center: [
+                            coords.lon,
+                            coords.lat
+                        ],
+                        essential: true
+                    })
+                }
+                $('#city').text("Current City: " + data.city.name);
+
+            }).fail(function (errors) {
+            console.error(errors);
+        });
+
+    }
+
+    displayWeather();
+
+    $('#citySearch').click(function(e){
+        e.preventDefault();
+        displayWeather($('#cityName').val());
+    })
+
+</script>
+
+<script src="mapbox-geocoder-utils.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.6/umd/popper.min.js" integrity="sha384-wHAiFfRlMFy6i5SRaxvfOCifBUQy1xHdJ/yoi7FRNXMRBu5WHdZYu1hA6ZOblgut" crossorigin="anonymous"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.2.1/js/bootstrap.min.js" integrity="sha384-B0UglyR+jN6CkvvICOB2joaf5I4l3gm9GU6Hc1og6Ls7i6U/mkkaduKaBhlAXv9k" crossorigin="anonymous"></script>
+
+</body>
+</html>

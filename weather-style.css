@@ -1,0 +1,24 @@
+#page-title {
+    font-size: 30px;
+}
+
+#coordinates {
+    margin: 20px;
+}
+
+/*li .list-group-item {*/
+/*    padding: 3px; */
+/*}*/
+
+div .card-header {
+    padding: 2px !important;
+}
+
+.list-group-item {
+    padding: 5px !important;
+}
+
+#weather-1 {
+    width: 100% !important;
+    margin-left: 0 !important;
+}
